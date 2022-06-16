@@ -1,0 +1,7 @@
+[DEFAULT]
+user = user
+token_name = token_name
+token_value = token_value
+
+#List of servers
+[server1]
