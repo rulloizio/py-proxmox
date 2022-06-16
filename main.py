@@ -5,19 +5,31 @@ from proxmoxer import ProxmoxAPI
 
 def getHost(host,cfg):
     proxmox = ProxmoxAPI(
-        host, user=cfg.get(host,'user'), token_name=cfg.get(host,'token_name'), token_value=cfg.get(host,'token_value'), verify_ssl=False
+        host, verify_ssl=False,
+        user= cfg.get(host,'user'),
+        token_name= cfg.get(host,'token_name'),
+        token_value= cfg.get(host,'token_value')
     )
-
+    r = {}
     for node in proxmox.nodes.get():
         n = json.loads(json.dumps(node))
-        print("node: {} status: {} ".format(n["node"],n["status"]))
+        r['Proxmox Name'] = n["node"]
+        r['Status'] = n["status"]
+        r['VMs'] = []
         for vm in proxmox.nodes(n["node"]).qemu.get():
-            print ("{0}. {1} => {2}".format(vm["vmid"], vm["name"], vm["status"]))
+            #print ("{0}. {1} => {2}".format(vm["vmid"], vm["name"], vm["status"]))
+            r['VMs'].append(dict({'VM id':vm["vmid"], 'VM name': vm["name"],'VM stato': vm["status"]}))
+        return r
 
 def main(config_file):
+    l = []
+    file = Path(Path.cwd() / CONFIG_DIR / PRODUCTION_FILE)
     cfg = getConfig(config_file= config_file)
+    
     for host in cfg.sections():
-        getHost(host,cfg)
+        l.append(getHost(host,cfg))
+    with open(file, 'w') as f:
+        json.dump(l, f)
     pass
 
 def appConfig():
@@ -49,6 +61,8 @@ def getConfig(config_file = 'config.ini'):
     return cfg
 pass
 
+#TODO backup
+#TODO LOG e ERR
 
 if __name__ == "__main__":
     appcfg = appConfig()
@@ -57,4 +71,5 @@ if __name__ == "__main__":
     LOG_DIR = appcfg.get('DEFAULT','LOG_DIR',fallback='personal_data/log')
     ROTATION_LOG = appcfg.get('DEFAULT','ROTATION_LOG',fallback='7')
     PROXMON_INI = appcfg.get('DEFAULT','PROXMOX_LIST',fallback='config.ini')
+    PRODUCTION_FILE = appcfg.get('DEFAULT','PRODUCTION_FILE',fallback='list-server.json')
     main(PROXMON_INI)
