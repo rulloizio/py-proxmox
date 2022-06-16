@@ -5,3 +5,6 @@ token_value = token_value
 
 #List of servers
 [server1]
+INTERNAL_NAME = nome personale
+PSW = user password
+SKIP = 1

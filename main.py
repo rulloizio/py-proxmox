@@ -1,16 +1,31 @@
 import json,configparser
 from pathlib import Path
 from proxmoxer import ProxmoxAPI
+from proxmoxer import ResourceException
 
 
 def getHost(host,cfg):
-    proxmox = ProxmoxAPI(
-        host, verify_ssl=False,
-        user= cfg.get(host,'user'),
-        token_name= cfg.get(host,'token_name'),
-        token_value= cfg.get(host,'token_value')
-    )
     r = {}
+    r['Address'] = host
+    r['Internal Name'] = cfg.get(host,'INTERNAL_NAME', fallback='non presente')
+    skip = cfg.get(host,'SKIP', fallback='0')
+    print(skip,host)
+    if(skip == '1'):
+        r['SKIP'] = 'Controllo disabilitato'
+        return r
+    #TODO controllo eccezioni
+    try:    
+        proxmox = ProxmoxAPI(
+            host, verify_ssl=False,
+            user= cfg.get(host,'user'),
+            token_name= cfg.get(host,'token_name'),
+            token_value= cfg.get(host,'token_value')
+        )
+    except ResourceException as err:
+        print(err)
+        r['Status'] = 'ERRORE'
+        return r
+
     for node in proxmox.nodes.get():
         n = json.loads(json.dumps(node))
         r['Proxmox Name'] = n["node"]
@@ -19,7 +34,7 @@ def getHost(host,cfg):
         for vm in proxmox.nodes(n["node"]).qemu.get():
             #print ("{0}. {1} => {2}".format(vm["vmid"], vm["name"], vm["status"]))
             r['VMs'].append(dict({'VM id':vm["vmid"], 'VM name': vm["name"],'VM stato': vm["status"]}))
-        return r
+    return r
 
 def main(config_file):
     l = []
@@ -29,7 +44,7 @@ def main(config_file):
     for host in cfg.sections():
         l.append(getHost(host,cfg))
     with open(file, 'w') as f:
-        json.dump(l, f)
+        json.dump(l, f, indent=2, sort_keys=True)
     pass
 
 def appConfig():
