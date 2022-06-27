@@ -1,8 +1,67 @@
 import json,configparser
+from string import Template
 from pathlib import Path
 from proxmoxer import ProxmoxAPI
 from proxmoxer import ResourceException
 
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+def read_template(filename):
+
+    """
+    Returns a Template object comprising the contents of the 
+    file specified by filename.
+    """
+
+    with open(filename, 'r', encoding='utf-8') as template_file:
+        template_file_content = template_file.read()
+    return Template(template_file_content)
+
+def inviaMail():
+    s = smtplib.SMTP(
+        host= appcfg.get('sendMail','MAIL_HOST',fallback = 'localhost'),
+        port= appcfg.get('sendMail','MAIL_PORT',fallback = 25))
+    if  int(appcfg.get('sendMail','MAIL_USESSL',fallback = 0)):
+        s.starttls()
+        s.login(
+            appcfg.get('sendMail','MAIL_USERNAME'),
+            appcfg.get('sendMail','MAIL_PASSWD')
+        )
+
+    msg = MIMEMultipart()       # create a message
+
+    # add in the actual person name to the message template
+    message = message_template_header.substitute(PERSON_NAME='TEST')
+
+    # Prints out the message body for our sake
+    print(message)
+
+    # setup the parameters of the message
+    msg['From'] = appcfg.get('sendMail','MAIL_FROM')
+    msg['To'] = appcfg.get('sendMail','MAIL_TO')
+    msg['Subject'] = "Riepilogo CLOUD TEST"
+
+    # add in the message body
+    msg.attach(MIMEText(message, 'plain'))
+
+    filename = PRODUCTION_FILE 
+    f = open(Path(Path.cwd() / CONFIG_DIR / PRODUCTION_FILE))
+    attachment = MIMEText(f.read())
+    f.close
+    attachment.add_header('Content-Disposition','attachment', filename=filename)
+    msg.attach(attachment)
+
+    # send the message via the server set up earlier.
+    try:
+        s.send_message(msg)
+    except Exception as exx:
+        print(exx)
+    finally:
+        del msg
+        s.quit()
+    pass
 
 def getHost(host,cfg):
     r = {}
@@ -87,4 +146,9 @@ if __name__ == "__main__":
     ROTATION_LOG = appcfg.get('DEFAULT','ROTATION_LOG',fallback='7')
     PROXMON_INI = appcfg.get('DEFAULT','PROXMOX_LIST',fallback='config.ini')
     PRODUCTION_FILE = appcfg.get('DEFAULT','PRODUCTION_FILE',fallback='list-server.json')
-    main(PROXMON_INI)
+    dict_list = main(PROXMON_INI)
+    message_template_header = read_template(Path(Path.cwd() / CONFIG_DIR / 'header.txt'))
+    message_template_body = read_template(Path(Path.cwd() / CONFIG_DIR / 'body.txt'))
+    
+    if int(appcfg.get('sendMail','ENABLE',fallback = 0)):
+        inviaMail()

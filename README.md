@@ -12,3 +12,4 @@ on first launch script create an "app-config.ini" with default variables for app
 - a ROTATION_LOG: day's number to exclude from error and log rotation
 - a PROXMOX_LIST file name with proxmox serer configurazion
 
+Using header.txt, body.txt, footer.txt with class string.Template we can crate a message to send by email
