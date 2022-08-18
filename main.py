@@ -84,8 +84,13 @@ def getHost(host,cfg):
         print(err)
         r['Status'] = 'ERRORE'
         return r
+    try:
+        nodes = proxmox.nodes.get()
+    except:
+        r['Status'] = 'ERRORE Host non Connesso'
+        return r
 
-    for node in proxmox.nodes.get():
+    for node in nodes:
         n = json.loads(json.dumps(node))
         r['Proxmox Name'] = n["node"]
         r['Status'] = n["status"]
