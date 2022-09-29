@@ -161,4 +161,8 @@ if __name__ == "__main__":
     message_template_server = read_template(Path(Path.cwd() / CONFIG_DIR / 'txterror-server.txt'))
 
     if int(appcfg.get('sendMail','ENABLE',fallback = 0) and len(errori)):
-        inviaMail(errori)
+        try:
+            inviaMail(errori)
+        except:
+            print("COnnessione assente")
+            print (errori)
