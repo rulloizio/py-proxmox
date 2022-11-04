@@ -164,5 +164,5 @@ if __name__ == "__main__":
         try:
             inviaMail(errori)
         except:
-            print("COnnessione assente")
-            print (errori)
+            print("Connessione assente")
+    print (errori)
